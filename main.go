@@ -2,73 +2,41 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 )
 
-var noOfSlaves = 3
-
-func mergeArray(firstArray, secondArray []string) (sortedArray []string) {
-	var firstIdx, secondIdx int
-
-	for firstIdx < len(firstArray) && secondIdx < len(secondArray) {
-		if firstArray[firstIdx] < secondArray[secondIdx] {
-			sortedArray = append(sortedArray, firstArray[firstIdx])
-			firstIdx++
-		} else {
-			sortedArray = append(sortedArray, secondArray[secondIdx])
-			secondIdx++
-		}
-	}
-
-	for firstIdx < len(firstArray) {
-		sortedArray = append(sortedArray, firstArray[firstIdx])
-		firstIdx++
-	}
-
-	for secondIdx < len(secondArray) {
-		sortedArray = append(sortedArray, secondArray[secondIdx])
-		secondIdx++
-	}
-
-	return sortedArray
+// Task : Creating an Task interface
+type Task interface {
+	// Contains execute defintion
+	Execute() interface{}
 }
 
-func slave(inputArray []string) (sortedArray []string) {
-	sort.Strings(inputArray)
-	return inputArray
+// SortTask : Create structutre to store value that will be used by Task interface to execute Task
+type SortTask struct {
+	InputData  interface{}
+	Comparator func(i, j int) bool
 }
 
-func master(inputArray []string) (sortedArray []string) {
-
-	n := len(inputArray)
-	partionSize := n / noOfSlaves
-	index := 0
-	counter := 0
-	sortedArrayMap := make(map[int][]string)
-
-	for index < n {
-		incrementedIndex := index + partionSize
-		currentSortedArray := slave(inputArray[index:incrementedIndex])
-		sortedArrayMap[counter] = currentSortedArray
-		index = incrementedIndex
-		counter++
+// Execute : Will sort the string array
+func (m SortTask) Execute() (outputData interface{}) {
+	if reflect.TypeOf(m.InputData).Kind() == reflect.Slice {
+		sort.SliceStable(m.InputData, m.Comparator)
+		outputData = m.InputData
+	} else {
+		fmt.Println("Invalid datatype")
 	}
-
-	for i := 0; i < len(sortedArrayMap); i++ {
-		if i == 0 {
-			sortedArray = append(sortedArray, sortedArrayMap[i]...)
-			continue
-		}
-		sortedArray = mergeArray(sortedArray, sortedArrayMap[i])
-	}
-
-	return sortedArray
+	return outputData
 }
 
 func main() {
-	inputArray := []string{"b", "a", "c", "e", "d", "f", "h", "g", "i"}
-	sortedArray := master(inputArray)
-	fmt.Println(sortedArray)
+	var sortTask Task
+	inputSortValue := []int{2, 1}
+	sortTask = SortTask{InputData: inputSortValue,
+		Comparator: func(i, j int) bool {
+			return inputSortValue[i] < inputSortValue[j]
+		}}
+	fmt.Println(sortTask.Execute())
 
 	return
 }
