@@ -2,12 +2,19 @@ package main
 
 import (
 	util "DistributedGolangSystem/distibutedTaskExecuter"
+	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"reflect"
 )
+
+// Response : Response structure
+type Response struct {
+	Data interface{}
+}
 
 // InterfaceSlice will convert interface to slice of interface
 func InterfaceSlice(slice interface{}) []interface{} {
@@ -93,6 +100,10 @@ func listenOnPort(port string) {
 
 			fmt.Println(mergeTask.Execute())
 
+			resp := Response{Data: mergeTask.Execute()}
+			b, _ := json.Marshal(resp)
+			conn.Write(b)
+
 			conn.Close()
 		}
 	}
@@ -104,5 +115,8 @@ func createClient(masterIPAddress string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	message, _ := bufio.NewReader(conn).ReadString('\n')
+	fmt.Print("Sorted data->: " + message)
 	defer conn.Close()
 }
