@@ -2,7 +2,10 @@ package main
 
 import (
 	util "DistributedGolangSystem/distibutedTaskExecuter"
+	"flag"
 	"fmt"
+	"log"
+	"net"
 	"reflect"
 )
 
@@ -28,38 +31,66 @@ func InterfaceSlice(slice interface{}) []interface{} {
 }
 
 func main() {
-	var (
-		sortTask, mergeTask util.Task
-		sortedArrayData     [][]interface{}
-		inputSortValue      = []int{10, 8, 5, 11, 15, 12, 1, 3, 2}
-		n                   = len(inputSortValue)
-		noOfSlaves          = 3
-		partionSize         = n / noOfSlaves
-		index               = 0
-	)
+	createMaster := flag.Bool("createMaster", false, "master node")
+	port := flag.String("port", "8000", "default port if 8000")
+	flag.Parse()
 
-	for index < n {
-		incrementedIndex := index + partionSize
-		currentInputSortValue := inputSortValue[index:incrementedIndex]
-		sortTask = util.SortTask{InputData: currentInputSortValue,
-			Comparator: func(i, j int) bool {
-				return currentInputSortValue[i] < currentInputSortValue[j]
-			}}
-		sortedArrayData = append(sortedArrayData, InterfaceSlice(sortTask.Execute()))
-		index = incrementedIndex
+	if *createMaster {
+		listenOnPort(*port)
 	}
 
-	mergeTask = util.MergeSortedArraysTask{InputData: sortedArrayData,
-		Comparator: func(elementOne, elementTwo interface{}) bool {
-			if reflect.TypeOf(elementOne).Kind() == reflect.Int {
-				firstElement := elementOne.(int)
-				secondElement := elementTwo.(int)
-				return firstElement < secondElement
-			}
-			return false
-		}}
-
-	fmt.Println(mergeTask.Execute())
-
 	return
+}
+
+// listenOnPort : will create master node and will listen for other connections
+func listenOnPort(port string) {
+	ln, err := net.Listen("tcp", ":"+port)
+	if err == nil {
+		fmt.Println("Master node is created and listening")
+	}
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		} else {
+			var (
+				sortTask, mergeTask util.Task
+				sortedArrayData     [][]interface{}
+				inputSortValue      = []int{10, 8, 5, 11, 15, 12, 1, 3, 2}
+				n                   = len(inputSortValue)
+				noOfSlaves          = 3
+				partionSize         = n / noOfSlaves
+				index               = 0
+			)
+
+			for index < n {
+				incrementedIndex := index + partionSize
+				currentInputSortValue := inputSortValue[index:incrementedIndex]
+				sortTask = util.SortTask{InputData: currentInputSortValue,
+					Comparator: func(i, j int) bool {
+						return currentInputSortValue[i] < currentInputSortValue[j]
+					}}
+				sortedArrayData = append(sortedArrayData, InterfaceSlice(sortTask.Execute()))
+				index = incrementedIndex
+			}
+
+			mergeTask = util.MergeSortedArraysTask{InputData: sortedArrayData,
+				Comparator: func(elementOne, elementTwo interface{}) bool {
+					if reflect.TypeOf(elementOne).Kind() == reflect.Int {
+						firstElement := elementOne.(int)
+						secondElement := elementTwo.(int)
+						return firstElement < secondElement
+					}
+					return false
+				}}
+
+			fmt.Println(mergeTask.Execute())
+
+			conn.Close()
+		}
+	}
 }
