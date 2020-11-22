@@ -32,11 +32,14 @@ func InterfaceSlice(slice interface{}) []interface{} {
 
 func main() {
 	createMaster := flag.Bool("createMaster", false, "master node")
-	port := flag.String("port", "8000", "default port if 8000")
+	port := flag.String("port", "8000", "default port is 8000")
+	masterIPAddress := flag.String("masterIPAddress", "localhost:8000", "default master ip address is 8000")
 	flag.Parse()
 
 	if *createMaster {
 		listenOnPort(*port)
+	} else {
+		createClient(*masterIPAddress)
 	}
 
 	return
@@ -93,4 +96,13 @@ func listenOnPort(port string) {
 			conn.Close()
 		}
 	}
+}
+
+// createClient : will create clients that will connect to master node
+func createClient(masterIPAddress string) {
+	conn, err := net.Dial("tcp", masterIPAddress)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close()
 }
